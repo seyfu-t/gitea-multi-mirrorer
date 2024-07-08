@@ -13,18 +13,21 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 
 GITEA_API_URL = f'{GITEA_INSTANCE_URL}/api/v1'
 
-def get_github_repos(user):
+def get_github_repos(username, token=GITHUB_TOKEN, include_forks=True):
+    fork_param = '+fork:true' if include_forks else ''
+    url = f'https://api.github.com/search/repositories?q=user:{username}{fork_param}&per_page=1000'
+    headers = {}
+    if token:
+        headers['Authorization'] = f'Bearer {token}'
+    
     repos = []
-    page = 1
-    while True:
-        response = requests.get(f'https://api.github.com/users/{user}/repos?page={page}')
-        if response.status_code != 200:
-            raise Exception(f'Failed to fetch GitHub repos: {response.status_code}')
+    while url:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
         data = response.json()
-        if not data:
-            break
-        repos.extend(data)
-        page += 1
+        repos.extend(data['items'])
+        url = response.links.get('next', {}).get('url')
+    
     return repos
 
 def get_gitlab_repos(path):
@@ -128,9 +131,14 @@ def main():
             print("This user or organization does not exist")
         else:
             break
+    
+    print(f'Found repo count: {len(repos)}')
 
     for repo in repos:
-        repo_name = f"{user}.{repo['name']}"
+        if gitea_org == user:
+            repo_name = f"{repo['name']}"
+        else:
+            repo_name = f"{user}.{repo['name']}"
         clone_url = repo[json_clone_url]
         description = f"Mirror of {source}/{user}/{repo['name']}"
         create_gitea_mirror(clone_url, repo_name, gitea_org, description)

@@ -9,6 +9,7 @@ load_dotenv()
 # Environment variables
 GITEA_TOKEN = os.getenv('GITEA_TOKEN')
 GITEA_INSTANCE_URL = os.getenv('GITEA_INSTANCE_URL')
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 
 GITEA_API_URL = f'{GITEA_INSTANCE_URL}/api/v1'
 
@@ -81,7 +82,8 @@ def create_gitea_mirror(clone_addr, repo_name, repo_owner, description):
         "description": description,
         "lfs": True,
         "mirror": True,
-        "wiki": True
+        "wiki": True,
+        "auth_token": GITHUB_TOKEN
     }
 
     response = requests.post(f"{GITEA_API_URL}/repos/migrate", json=payload, headers=headers)

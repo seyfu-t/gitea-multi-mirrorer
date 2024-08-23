@@ -25,7 +25,12 @@ def get_github_repos(username, token=GITHUB_TOKEN, include_forks=True):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        repos.extend(data['items'])
+        for item in data['items']:
+            repos.append({
+                'name': item['name'],
+                'clone_url': item['clone_url'],
+                'private': item['private']
+            })
         url = response.links.get('next', {}).get('url')
     
     return repos
@@ -72,7 +77,7 @@ def get_gitea_repos(base_url, user):
         page += 1
     return repos
 
-def create_gitea_mirror(clone_addr, repo_name, repo_owner, description):
+def create_gitea_mirror(clone_addr, repo_name, repo_owner, description, private=False):
     headers = {
         'Authorization': f'Bearer {GITEA_TOKEN}',
         'Content-Type': 'application/json'
@@ -86,7 +91,8 @@ def create_gitea_mirror(clone_addr, repo_name, repo_owner, description):
         "lfs": True,
         "mirror": True,
         "wiki": True,
-        "auth_token": GITHUB_TOKEN
+        "auth_token": GITHUB_TOKEN,
+        "private": private
     }
 
     response = requests.post(f"{GITEA_API_URL}/repos/migrate", json=payload, headers=headers)
@@ -141,7 +147,8 @@ def main():
             repo_name = f"{user}.{repo['name']}"
         clone_url = repo[json_clone_url]
         description = f"Mirror of {source}/{user}/{repo['name']}"
-        create_gitea_mirror(clone_url, repo_name, gitea_org, description)
+        private = repo.get('private', False)  # Default to False if 'private' key doesn't exist
+        create_gitea_mirror(clone_url, repo_name, gitea_org, description, private)
 
 if __name__ == '__main__':
     main()

@@ -103,7 +103,7 @@ def create_gitea_mirror(clone_addr, repo_name, repo_owner, description, private=
         print(f"Failed to create mirror for {repo_name}: {response.status_code} {response.text}")
 
 def checkUserOrOrgExists(name: str):
-    response = requests.get(f'{GITEA_API_URL}/users/{name}')
+    response = requests.get(f'{GITEA_API_URL}/users/{name.lower()}')
     return response.status_code == 200
 
 def main():
@@ -131,7 +131,7 @@ def main():
         return
 
     while True:
-        gitea_org = input("Enter the Gitea organization or username, that will own the repo: ").strip()
+        gitea_org = input("Enter the Gitea organization or username, that will own the repo: ").strip().lower()
 
         if not checkUserOrOrgExists(gitea_org):
             print("This user or organization does not exist")
@@ -141,7 +141,7 @@ def main():
     print(f'Found repo count: {len(repos)}')
 
     for repo in repos:
-        if gitea_org == user:
+        if gitea_org == user.lower():
             repo_name = f"{repo['name']}"
         else:
             repo_name = f"{user}.{repo['name']}"
